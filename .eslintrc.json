@@ -9,7 +9,7 @@
   ],
   "overrides": [
     {
-      "files": ["fake.gql"],
+      "files": ["*.gql"],
       "parserOptions": {
         "schema": "schema.graphql"
       },
