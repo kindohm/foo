@@ -443,18 +443,18 @@ type FeedGenerosity {
   inFaithDonationsYTD: Float
   actionTeamsLedYTD: Int
   actionTeamsLedLifetime: Int
-  totalThriventGenerosity: PreviousYearThriventGenerosity!
+  totalThrvGenerosity: PreviousYearThrvGenerosity!
   totalLifetimeGrants: Float
 }
 
 ###
 # The expectation is that these will be strings in the format of #17.2 Million Hours# or #2.5 Million volunteers#
 ###
-type PreviousYearThriventGenerosity {
+type PreviousYearThrvGenerosity {
   totalMemberDonations: String
   totalVolunteerHours: String
   totalVolunteers: String
-  totalThriventDonations: String
+  totalThrvDonations: String
   totalOutreach: String
   ###
   # Which year this applies to (e.g. 2019)
