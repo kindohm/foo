@@ -1,0 +1,37 @@
+querys MutualFundDetail($consumerId: String!, $id: ID!) {
+  mutualFundDetail(consumerId: $consumerId, id: $id) {
+    id
+    accountType
+    accountValue
+    accountNumber
+    accountValueAsOfDate
+    accountDescription
+    accountYTDValueChange
+    rateOfReturn {
+      rateOfReturnYTD
+    }
+    owners
+    accountRegistration
+    positions {
+      fundId
+      positionId
+      priceChange
+      symbol
+      name
+      shares
+      nav
+      positionValue
+      rateOfReturn {
+        rateOfReturnYTD
+      }
+    }
+    valueOverTimeMonthly {
+      date
+      value
+    }
+    valueOverTimeYearly {
+      date
+      value
+    }
+  }
+}

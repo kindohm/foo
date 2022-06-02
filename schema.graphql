@@ -1,0 +1,1549 @@
+type Query {
+  consumerId: String!
+  feed(consumerId: String!): Feed
+  annuityDetail(
+    consumerId: String!
+    id: ID!
+    productTypeCode: String!
+  ): AnnuityDetail
+  settlementOptionDetail(
+    consumerId: String!
+    id: ID!
+    productTypeCode: String!
+  ): SettlementOptionDetail
+  lifeDetail(
+    consumerId: String!
+    id: ID!
+    productTypeCode: String!
+  ): LifeInsuranceDetail
+  healthDetail(
+    consumerId: String!
+    id: ID!
+    productTypeCode: String!
+  ): HealthInsuranceDetail
+  lifeHealthHybridDetail(
+    consumerId: String!
+    id: ID!
+    productTypeCode: String!
+  ): LifeHealthHybridInsuranceDetail
+  brokerageDetail(consumerId: String!, id: ID!): BrokerageAccountDetail
+  mutualFundDetail(consumerId: String!, id: ID!): MutualFundAccountDetail
+  mutualFundSecurityTransactionRestrictions(
+    consumerId: String!
+    positionId: String!
+  ): MutualFundSecurityTransactionRestrictions
+  mutualFundTransactionInformation(
+    consumerId: String!
+    transactionType: MutualFundTransactionType!
+    positionId: String!
+    defaultBank: Boolean!
+  ): MutualFundTransactionInformation
+  mutualFundSecurityRedemptionRestrictions(
+    consumerId: String!
+    positionId: String!
+  ): MutualFundSecurityRedemptionRestrictions
+  settings(consumerId: String!): CurrentSettings
+  ###
+  # For all of the statements, an array of the statements for the requested id will be returned
+  #
+  # startDate and endDate provide a range of dates, and must be provided together if they are provided
+  #
+  # type is strictly optional
+  ###
+  lifeDocuments(
+    consumerId: String!
+    id: ID!
+    startDate: String
+    endDate: String
+    type: DocumentType
+  ): [DocumentInfo!]
+  healthDocuments(
+    consumerId: String!
+    id: ID!
+    startDate: String
+    endDate: String
+    type: DocumentType
+  ): [DocumentInfo!]
+  annuityDocuments(
+    consumerId: String!
+    id: ID!
+    startDate: String
+    endDate: String
+    type: DocumentType
+  ): [DocumentInfo!]
+  brokerageDocuments(
+    consumerId: String!
+    id: ID!
+    startDate: String
+    endDate: String
+    type: DocumentType
+  ): [DocumentInfo!]
+  mutualFundDocuments(
+    consumerId: String!
+    id: ID!
+    startDate: String
+    endDate: String
+    type: DocumentType
+  ): [DocumentInfo!]
+  actionTeamDetails(consumerId: String!): ActionTeamDetails!
+  choiceDollarDetails(consumerId: String!): ChoiceDollarDetails!
+  choiceDollarSuggestedOrganizations(
+    consumerId: String!
+  ): [ChoiceDollarOrganization!]
+  inFaithDetails(consumerId: String!): InFaithDetails
+  brokerageTransactionHistory(
+    consumerId: String!
+    id: ID!
+  ): [BrokerageTransaction!]
+  mutualFundTransactionHistory(
+    consumerId: String!
+    accountId: ID!
+  ): [MutualFundTransaction!]
+  lifeTransactionHistory(
+    consumerId: String!
+    id: ID!
+    productTypeCode: String!
+  ): [LifeTransaction!]
+  healthTransactionHistory(
+    consumerId: String!
+    id: ID!
+    productTypeCode: String!
+  ): [HealthTransaction!]
+  annuityTransactionHistory(
+    consumerId: String!
+    id: ID!
+    productTypeCode: String!
+  ): [AnnuityTransaction!]
+  ###
+  ##LHA Payments
+  ###
+  fundingSourceInfo(consumerId: String!): [FundingSource]!
+
+  pendingPayments(
+    consumerId: String!
+    contractId: String
+    productTypeCode: String
+  ): ScheduledPayments
+  billsDetails(
+    consumerId: String!
+    contractId: String
+    productTypeCode: String
+  ): BillDetails
+}
+
+###
+# The expectation is that errors will be contained in the GraphQL error structure.
+# The Boolean return types here are intended to be true for success, false for
+# failure, although it's redundant within the context of GraphQL
+###
+type Mutation {
+  settings(consumerId: String!, settings: SettingsUpdate): CurrentSettings
+  makeChoiceDollarDonation(
+    consumerId: String!
+    donation: [ChoiceDollarDonation]
+  ): Boolean
+  ###
+  # Mutual fund payments/exchanges/redemptions all return the date on which the transaction
+  # will be processed, in ISO8601 yyyy-mm-dd format
+  ###
+  mutualFundPurchase(
+    consumerId: String!
+    positionId: String!
+    account: ID!
+    amount: Float!
+    taxYear: TaxYear!
+    accountType: String!
+  ): String
+  ###
+  # For a mutual fund exchange, either percentAmount, shares, or dollarAmount is required.
+  #
+  # Note that if percentAmount is 100.0 there will be work to be done on the backend
+  # to close things out.
+  ###
+  mutualFundExchange(
+    consumerId: String!
+    fromPositionId: String!
+    toPositionId: String!
+    fullLiquidation: Boolean!
+    percentAmount: Float
+    dollarAmount: Float
+    shares: Float
+  ): String
+  # bankAccount is only sent for a bank (ACH) redemption, for check mailing it won't be sent
+  ###
+  mutualFundRedemption(
+    consumerId: String!
+    positionId: String!
+    redemptionDistributionType: RedemptionDistributionType!
+    accountType: String!
+    bankAccount: ID
+    fullLiquidation: Boolean!
+    percentAmount: Float
+    dollarAmount: Float
+    shares: Float
+    stateTaxWitholdingAmount: Float
+    federalTaxWitholdingAmount: Float
+    federalTaxWitholdingPercent: Float
+  ): String
+  # mutation for tax withholding restrictions.
+  ###
+  mutualFundRedemptionFiduciaryCalculator(
+    consumerId: String!
+    positionId: String!
+    fullLiquidation: Boolean!
+    percentAmount: Float
+    dollarAmount: Float
+    shares: Float
+  ): MutualFundRedemptionTaxWitholdingRestrictions
+
+  ###
+  #  The Payments mutations return a confirmation number
+  ###
+
+  makePayment(
+    consumerId: String!
+    contractId: ID!
+    productTypeCode: String!
+    billingId: ID
+    fundingSourceId: ID!
+    paymentAmount: Float!
+    paymentComponents: [PaymentComponent!]!
+    ###
+    ##ISO-8601 - YYYY-MM-DD -- if not present, it's assumed to be immediate
+    ###
+    effectiveDate: String!
+    reportingTaxYear: Int
+    paymentChannel: PaymentChannel!
+  ): PaymentConfirmation
+
+  cancelPayment(
+    consumerId: String!
+    vendorCode: String!
+    confirmationNumber: String!
+  ): PaymentConfirmation
+
+  updatePayment(
+    consumerId: String!
+    confirmationNumber: String!
+    fundingSourceId: ID!
+    vendorCode: String!
+    ###
+    ##ISO-8601 - YYYY-MM-DD -- if not present, it's assumed to be immediate
+    ###
+    effectiveDate: String!
+    paymentAmount: Float!
+    productTypeCode: String!
+    contractId: ID!
+    paymentChannel: PaymentChannel!
+    billingId: ID
+    reportingTaxYear: Int
+    paymentComponents: [PaymentComponent!]!
+  ): PaymentConfirmation
+
+  deleteFundingSource(
+    consumerId: String!
+    fundingSourceId: ID!
+  ): DeleteFundingSourceResponse
+
+  validatePaymentDate(
+    consumerId: String!
+    contractId: ID!
+    billingType: String
+    productTypeCode: String!
+    fromDate: String
+    toDate: String!
+  ): ValidPaymentDate
+
+  addFundingSource(
+    consumerId: String!
+    successUrl: String!
+    failureUrl: String!
+    timeoutUrl: String!
+  ): FundingSourceUrl
+
+  modifyFundingSource(
+    consumerId: String!
+    fundingSourceId: ID!
+    successUrl: String!
+    failureUrl: String!
+    timeoutUrl: String!
+  ): FundingSourceUrl
+}
+
+type DeleteFundingSourceResponse {
+  fundingDeleted: Boolean!
+}
+
+type PaymentConfirmation {
+  ###
+  ##  This id is the Payment response
+  ###
+  confirmationNumber: ID!
+  effectiveDate: String
+}
+
+type ValidPaymentDate {
+  validDates: [String!]
+  todayCutOffTime: String
+}
+
+enum TaxYear {
+  CURRENT_YEAR
+  PRIOR_YEAR
+  NON_FIDUCIARY
+}
+
+type DocumentInfo {
+  ###
+  # In a consolidated statement there won't be an Id associated with it, so this member is optional
+  ###
+  accountId: ID
+  type: DocumentType
+  ###
+  # ISO860 - yyyy-mm-dd
+  ###
+  date: String!
+  documentYear: String
+  ###
+  # URL of the PDF file
+  ###
+  url: String!
+  ###
+  description: String
+}
+
+enum DocumentType {
+  TAX
+  STATEMENT
+  CONSOLIDATED
+  OTHER
+  TRADE_CONFIRMS
+}
+
+###
+# The settings for the currently logged in user. This is limited to items that the user can change -- other items (e.g. member id) would be contained within a profile call
+###
+interface Settings {
+  greetingName: String
+  legalSurname: String
+  contactInfo: ContactInfo
+  ###
+  # URL from which the user's avatar can be downloaded
+  ###
+  avatar: String
+}
+
+type CurrentSettings implements Settings {
+  checksum: String!
+  greetingName: String
+  firstName: String
+  legalSurname: String
+  contactInfo: ContactInfo
+  avatar: String
+}
+
+input SettingsUpdate {
+  ###
+  # When updating, you must provide the checksum you received in the settings query (see CurrentSettings object)
+  ###
+  checksum: String!
+  ###
+  # Greeting Name cannot be updated for MVP
+  ###
+  greetingName: String
+  legalSurname: String
+  contactInfo: ContactInfoUpdate
+  avatar: String
+}
+
+###
+# The feed is known to be incomplete -- additional pieces will be added as final functionality is firmed up
+###
+type Feed {
+  userInfo: Person
+  accounts: FeedAccounts
+  insurance: FeedInsurance
+  financialPlanners: [Person!]
+  generosity: FeedGenerosity
+}
+
+type Person {
+  id: ID!
+  ###
+  # When used in the feed, this would be the user's greeting name. In other contexts it's whatever first name is on file
+  ###
+  firstName: String
+  legalSurname: String
+  ###
+  # Only used for financialPlanners and not userInfo
+  ###
+  credentials: String
+  ###
+  # A URL from which the person's avatar can be downloaded
+  # Only used for financialPlanners and not userInfo
+  ###
+  avatar: String
+  contactInfo: ContactInfo
+}
+
+type ContactInfo {
+  email: String
+  ###
+  # Phone numbers contain no spaces, dashes, or parentheses. All phone numbers are 10 digits (no international numbers)
+  ###
+  mobilePhone: String
+  homePhone: String
+  workPhone: String
+  address: Address
+}
+
+input ContactInfoUpdate {
+  email: String
+  ###
+  # Phone numbers contain no spaces, dashes, or parentheses. All phone numbers are 10 digits (no international numbers)
+  ###
+  mobilePhone: String
+  homePhone: String
+  workPhone: String
+  address: AddressUpdate
+}
+
+type Address {
+  address1: String!
+  address2: String
+  city: String!
+  state: String!
+  zip: String!
+}
+
+input AddressUpdate {
+  address1: String!
+  address2: String
+  city: String!
+  state: String!
+  zip: String!
+}
+
+###
+# This type allows us to provide the user with many different change rate of return options, depending on requirements.
+#
+# These are all percentages, so a value of 1 means 1% not 100%, and a value of 0.34 means 0.34%, not 34%
+###
+type RateOfReturn {
+  rateOfReturnYTD: Float
+  rateOfReturnPriorYear: Float
+  rateOfReturnSinceInception: Float
+}
+
+type FeedGenerosity {
+  isChoiceDollarEligible: Boolean!
+  isActionTeamEligible: Boolean!
+  choiceDollarBalance: Float
+  choiceDollarsDirectedYTD: Float
+  inFaithDonationsYTD: Float
+  actionTeamsLedYTD: Int
+  actionTeamsLedLifetime: Int
+  totalThriventGenerosity: PreviousYearThriventGenerosity!
+  totalLifetimeGrants: Float
+}
+
+###
+# The expectation is that these will be strings in the format of #17.2 Million Hours# or #2.5 Million volunteers#
+###
+type PreviousYearThriventGenerosity {
+  totalMemberDonations: String
+  totalVolunteerHours: String
+  totalVolunteers: String
+  totalThriventDonations: String
+  totalOutreach: String
+  ###
+  # Which year this applies to (e.g. 2019)
+  ###
+  year: Int
+}
+
+type FeedAccounts {
+  annuities: FeedAnnuitiesSummary
+  investments: FeedInvestmentsSummary
+}
+
+###
+# These Feed___Summary types allow us to separate these calls more easily for performance reason since they come from different systems on the backend
+###
+type FeedAnnuitiesSummary {
+  annuities: FeedAnnuities
+  settlementOptions: FeedSettlementOptions
+  annuitiesTotalValue: Float
+  annuitiesTotalSurrenderValue: Float
+  ###
+  # ISO8601 - e.g 2007-04-05
+  ###
+  annuitiesAsOfDate: String
+  settlementOptionsTotalSurrenderValue: Float
+  ###
+  # ISO8601 - e.g 2007-04-05
+  ###
+  settlementOptionsAsOfDate: String
+}
+
+type FeedInvestmentsSummary {
+  brokerage: FeedBrokerage
+  mutualFund: FeedMutualFund
+  investmentsTotal: Float
+  investmentsChangeYTD: Float
+  ###
+  # ISO8601 - e.g 2007-04-05T14:30Z
+  ###
+  investmentsAsOfDate: String
+}
+
+type FeedInsurance {
+  totalNetDeathBenefit: Float
+  ###
+  # ISO8601 -- YYYY-MM-DD
+  ###
+  totalNetDeathBenefitAsOfDate: String
+  policies: [FeedInsurancePolicy!]
+}
+
+type FeedAnnuities {
+  products: [FeedAnnuityProduct!]
+}
+
+type FeedSettlementOptions {
+  products: [FeedSettlementOptionProduct!]
+}
+
+type FeedBrokerage {
+  accounts: [FeedBrokerageAccount!]
+}
+
+type FeedMutualFund {
+  accounts: [FeedMutualFundAccount!]
+}
+
+interface FeedSecuritiesAccount {
+  id: ID!
+  status: AccountStatus!
+  accountDescription: String!
+  accountType: String!
+  accountValue: Float
+  ###
+  # ISO8601 - e.g 2007-04-05T14:30Z
+  ###
+  accountValueAsOfDate: String
+  accountYTDValueChange: Float
+}
+
+type FeedBrokerageAccount implements FeedSecuritiesAccount {
+  id: ID!
+  status: AccountStatus!
+  accountDescription: String!
+  accountType: String!
+  accountValue: Float
+  ###
+  # ISO8601 - e.g 2007-04-05T14:30Z
+  ###
+  accountValueAsOfDate: String
+  accountYTDValueChange: Float
+}
+
+type FeedMutualFundAccount implements FeedSecuritiesAccount {
+  # id : accountId
+  id: ID!
+  accountNumber: String!
+  status: AccountStatus!
+  accountDescription: String!
+  accountType: String!
+  accountValue: Float!
+  ###
+  # ISO8601 - e.g 2007-04-05T14:30Z
+  ###
+  accountValueAsOfDate: String
+  accountYTDValueChange: Float!
+}
+
+enum AccountStatus {
+  OPEN
+  CLOSED
+}
+
+type FeedAnnuityProduct {
+  id: ID!
+  description: String!
+  value: Float!
+  type: AnnuityType!
+  productTypeCode: String!
+  lastPayoutAmount: Float
+  inPayout: Boolean
+  ###
+  # ISO8601 Date String (YYYY-MM-DD)
+  ###
+  lastPayoutDate: String
+  surrenderValue: Float
+  isRevocable: Boolean
+  annuitants: [String!]
+}
+
+enum AnnuityType {
+  ###
+  # A fixed immediate annuity
+  ###
+  SPIA
+  ###
+  # A variable immediate annuity
+  ###
+  SPIVA
+  ###
+  # Fixed deferred
+  ###
+  FD
+  ###
+  # Variable deferred
+  ###
+  VD
+}
+
+type FeedSettlementOptionProduct {
+  id: ID!
+  description: String!
+  type: SettlementOptionType!
+  productTypeCode: String!
+  lastPayoutAmount: Float
+  inPayout: Boolean
+  lastPayoutDate: String
+  surrenderValue: Float
+  isRevocable: Boolean
+}
+
+enum SettlementOptionType {
+  SPECIFIED_AMOUNT
+  FIXED_PERIOD
+  LIFE_INCOME
+  VARIABLE
+  DEFERRED_INCOME
+  FLEXIBLE_PAYOUT
+}
+
+type FeedInsurancePolicy {
+  id: ID!
+  type: InsuranceType
+  productTypeCode: String!
+  description: String!
+  insured: String!
+  ###
+  # Value represents different things based on type:
+  # DI - monthly benefit
+  # LTC - remaining balance available
+  # VUL/UL/TL/WL - net death benefit
+  # MEDICARE - annual premium
+  #
+  # It's up to the UI to make that distinction in labeling
+  ###
+  value: Float!
+  benefitMode: InsuranceBenefitMode
+  totalBenefitAmountRemaining: Float
+}
+
+enum InsuranceType {
+  ###
+  # Variable universal life insurance
+  ###
+  VUL
+  ###
+  # Fixed universal life insurance
+  ###
+  UL
+  ###
+  # Term life insurance
+  ###
+  TL
+  ###
+  # Whole life insurance
+  ###
+  WL
+  ###
+  # Long-term care insurance
+  ###
+  LTC
+  ###
+  # Disability insurance
+  ###
+  DI
+  ###
+  # Medicare supplemental insurance
+  ###
+  MEDICARE
+  ###
+  # Life-LTC Hybrid Insurance
+  ###
+  WLLTC
+}
+
+###
+# All fields that aren't needed for a particular type will be sent as null if requested. This allows a client to request details without knowing the type.
+###
+interface InsuranceDetail {
+  id: ID!
+  type: InsuranceType
+  productTypeCode: String!
+  description: String!
+  insured: String!
+  ###
+  # Value represents different things based on type. Those are detailed under FeedInsuranceDetail
+  #
+  # It's up to the UI to make that distinction in labeling
+  ###
+  value: Float!
+  ###
+  # If different from insured, otherwise null
+  ###
+  owner: String
+  ###
+  # ISO8601 YYYY-MM-DD
+  ###
+  issueDate: String!
+}
+
+###
+# All fields that aren't needed for a particular type will be sent as null if requested. This allows a client to request details without knowing the type.
+###
+type LifeInsuranceDetail implements InsuranceDetail {
+  id: ID!
+  type: InsuranceType
+  productTypeCode: String!
+  description: String!
+  insured: String!
+  ###
+  # For life insurance, this is netDeathBenefit
+  ###
+  value: Float!
+  ###
+  # If different from insured, otherwise null
+  ###
+  owner: String
+  ###
+  # ISO8601 YYYY-MM-DD
+  ###
+  issueDate: String!
+  beneficiaries: [Beneficiary!]
+  surrenderValue: Float!
+  ###
+  # ISO8601 YYYY-MM-DD
+  ###
+  surrenderValueAsOf: String!
+  ###
+  # ISO8601 YYYY-MM-DD
+  ###
+  beneficiaryEffectiveDate: String
+  billedPremium: Float
+  ###
+  # ISO8601 YYYY-MM-DD
+  ###
+  nextPremiumDate: String
+  billingFrequency: String
+  regularLoanAmount: Float
+  ###
+  # a value of 3.4 here would correspond to 3.4%, not 340%
+  ###
+  regularLoanRate: Float
+  preferredLoanAmount: Float
+  ###
+  # a value of 3.4 here would correspond to 3.4%, not 340%
+  ###
+  preferredLoanRate: Float
+  taxableGain: Float!
+  surrenderCharge: Float
+  cashValue: Float
+  ###
+  # a value of 3.4 here would correspond to 3.4%, not 340%
+  ###
+  cashValueCurrentInterestRate: Float
+  dividendCashValue: Float
+  annualDividendPaid: Float
+  riders: [String!]
+  subaccounts: [SubAccount!]
+}
+
+type SubAccount {
+  name: String
+  unitCount: Float!
+  unitValue: Float!
+  totalValue: Float
+  ###
+  # a value of 3.4 here would correspond to 3.4%, not 340%
+  ###
+  allocation: Float!
+  currentInterestRate: Float
+  guaranteedInterestRate: Float
+}
+
+###
+# All fields that aren't needed for a particular type will be sent as null if requested. This allows a client to request details without knowing the type.
+###
+type HealthInsuranceDetail implements InsuranceDetail {
+  id: ID!
+  type: InsuranceType
+  productTypeCode: String!
+  description: String!
+  insured: String!
+  ###
+  # See description under `InsuranceDetail`
+  ###
+  value: Float!
+  ###
+  # If different from insured, otherwise null
+  ###
+  owner: String
+  ###
+  # ISO8601 YYYY-MM-DD
+  ###
+  issueDate: String!
+  ###
+  # benefits also contains riders
+  ###
+  baseBenefit: InsuranceBenefit!
+  benefits: [InsuranceBenefit!]
+  billedPremium: Float
+  ###
+  # ISO8601: YYYY-MM-DD
+  ###
+  nextPremiumDate: String
+  billingFrequency: String
+  ###
+  # ISO8601: YYYY-MM-DD
+  ###
+  asOfDate: String!
+  payor: String
+  payors: [String!]
+  designee: String
+}
+
+###
+# All fields that aren't needed for a particular type will be sent as null if requested. This allows a client to request details without knowing the type.
+###
+type LifeHealthHybridInsuranceDetail implements InsuranceDetail {
+  id: ID!
+  type: InsuranceType
+  productTypeCode: String!
+  description: String!
+  insured: String!
+  ###
+  # See description under `InsuranceDetail`
+  ###
+  value: Float!
+  ###
+  # If different from insured, otherwise null
+  ###
+  owner: String
+  owners: [String!]
+  ###
+  # ISO8601 YYYY-MM-DD
+  ###
+  issueDate: String!
+  ###
+  # benefits also contains riders
+  ###
+  baseBenefit: InsuranceBenefit!
+  benefits: [InsuranceBenefit!]
+  billedPremium: Float
+  ###
+  # ISO8601: YYYY-MM-DD
+  ###
+  nextPremiumDate: String
+  billingFrequency: String
+  ###
+  # ISO8601: YYYY-MM-DD
+  ###
+  asOfDate: String!
+  payor: String
+  payors: [String!]
+  designee: String
+
+  ###
+  # Life fields
+  ###
+  cashValue: Float
+  regularLoanAmount: Float
+  regularLoanRate: Float
+
+  surrenderCharge: Float
+  surrenderValue: Float!
+  surrenderValueAsOf: String!
+}
+
+type InsuranceBenefit {
+  name: String!
+  eliminationPeriod: String
+  benefitAmount: Float
+  benefitPeriod: String
+  benefitMode: InsuranceBenefitMode
+}
+
+enum InsuranceBenefitMode {
+  DAILY
+  WEEKLY
+  MONTHLY
+  ANNUALLY
+}
+
+###
+# All fields that aren't needed for a particular type will be sent as null if requested. This allows a client to request details without knowing the type.
+###
+type AnnuityDetail {
+  id: ID!
+  description: String!
+  value: Float!
+  type: AnnuityType!
+  productTypeCode: String!
+  lastPayoutAmount: Float
+  ###
+  # ISO8601 Date String (YYYY-MM-DD)
+  ###
+  lastPayoutDate: String
+  inPayout: Boolean
+  isRevocable: Boolean
+  payoutFrequency: String
+  ###
+  # ISO8601 Date String (YYYY-MM-DD)
+  ###
+  nextPayoutDate: String
+  surrenderValue: Float!
+  surrenderValueAsOfDate: String
+  surrenderCharge: Float
+  deathBenefitValue: Float
+  deathBenefitAsOfDate: String
+  pensionType: String!
+  annuitants: [String!]!
+  subaccounts: [SubAccount!]
+  ###
+  # An array of names
+  ###
+  owners: [String!]!
+  ###
+  # This will be a percentage. A 4.1% interest rate would be sent as 4.1 here. This is the current or average interest rate
+  ###
+  interestRate: Float
+  ###
+  # This will be a percentage. A 4.1% interest rate would be sent as 4.1 here
+  ###
+  minimumGuaranteedInterest: Float
+  ###
+  # ISO8601 date string (YYYY-MM-DD)
+  ###
+  asOfDate: String!
+  ###
+  # ISO8601 date string (YYYY-MM-DD)
+  ###
+  issueDate: String!
+  ###
+  # This covers benefits and riders
+  ###
+  benefits: [AnnuityBenefit!]
+  beneficiaries: [Beneficiary!]
+  ###
+  # ISO8601 date string (YYYY-MM-DD)
+  ###
+  beneficiaryEffectiveDate: String
+}
+
+type AnnuityBenefit {
+  name: String!
+  gawaAmount: Float
+}
+
+###
+# All fields that aren't needed for a particular type will be sent as null if requested. This allows a client to request details without knowing the type.
+###
+type SettlementOptionDetail {
+  id: ID!
+  description: String!
+  value: Float!
+  type: SettlementOptionType!
+  productTypeCode: String!
+  lastPayoutAmount: Float
+  ###
+  # ISO8601 Date String (YYYY-MM-DD)
+  ###
+  lastPayoutDate: String
+  inPayout: Boolean
+  isRevocable: Boolean
+  payoutFrequency: String
+  ###
+  # ISO8601 Date String (YYYY-MM-DD)
+  ###
+  nextPayoutDate: String
+  surrenderValue: Float
+  surrenderValueAsOfDate: String
+  deathBenefitValue: Float
+  deathBenefitAsOfDate: String
+  pensionType: String
+  subaccounts: [SubAccount!]
+  ###
+  # An array of names
+  ###
+  annuitants: [String!]!
+  payee: [String!]
+  agreementNumber: String!
+  ###
+  # This will be a percentage. A 4.1% interest rate would be sent as 4.1 here. This is the current or average interest rate
+  ###
+  interestRate: Float
+  ###
+  # This will be a percentage. A 4.1% interest rate would be sent as 4.1 here
+  ###
+  minimumGuaranteedInterest: Float
+  ###
+  # ISO8601 date string (YYYY-MM-DD)
+  ###
+  asOfDate: String!
+  ###
+  # ISO8601 date string (YYYY-MM-DD)
+  ###
+  issueDate: String!
+  ###
+  # This covers benefits and riders
+  ###
+  beneficiaries: [Beneficiary!]
+  ###
+  # ISO8601 date string (YYYY-MM-DD)
+  ###
+  beneficiaryEffectiveDate: String
+}
+
+type Beneficiary {
+  type: BeneficiaryType!
+  name: String!
+  ###
+  # Relationship is not a part of the MVP
+  ###
+  relationship: String @deprecated
+  ###
+  # This will be a percentage. A 40.0% interest percent would be sent as 40.0 here.
+  ###
+  interestPercent: Float
+}
+
+enum BeneficiaryType {
+  PRIMARY
+  FIRST_CONTINGENT
+  SECOND_CONTINGENT
+  THIRD_CONTINGENT
+}
+
+type BrokerageAccountDetail {
+  id: ID!
+  accountStatus: AccountStatus!
+  accountDescription: String!
+  accountType: String!
+  accountValue: Float
+  ###
+  # ISO8601 - eg 2007-04-05T14:30Z
+  ###
+  accountValueAsOfDate: String
+  accountYTDValueChange: Float
+  valueOverTimeDaily: [SecurityAccountTimeValue!]
+  valueOverTimeMonthly: [SecurityAccountTimeValue!]
+  positions: [BrokerageSecurityDetail!]
+  ###
+  # To indicate a value of 3.4% the value here would be 3.4, not .034
+  ###
+  dayChangePercent: Float
+  dayChangeValue: Float
+  unrealizedGainLossValue: Float
+  recentMarketValue: Float
+  cashAvailableToTrade: Float
+  cashAvailableToWithdraw: Float
+}
+
+type BrokerageSecurityDetail {
+  symbol: String!
+  description: String!
+  recentQuantity: Float!
+  closingQuantity: Float!
+  recentPrice: Float
+  recentMarketValue: Float
+  changeValue: Float
+  ###
+  # A change percentage since last close -- this is a percent, so 1 = 1%
+  ###
+  changePercent: Float
+  ###
+  # To indicate a value of 3.4% the value here would be 3.4, not .034
+  ###
+  unrealizedGainLossPercent: Float
+  unrealizedGainLossValue: Float
+}
+
+type MutualFundAccountDetail {
+  # id -accountId
+  id: ID!
+  accountStatus: AccountStatus!
+  accountDescription: String!
+  accountType: String!
+  accountValue: Float
+  accountNumber: String!
+  ###
+  # ISO8601 - eg 2007-04-05T14:30Z
+  ###
+  accountValueAsOfDate: String
+  accountYTDValueChange: Float!
+  valueOverTimeMonthly: [SecurityAccountTimeValue!]
+  valueOverTimeYearly: [SecurityAccountTimeValue!]
+  positions: [MutualFundSecurityDetail!]
+  rateOfReturn: RateOfReturn!
+  owners: [String!]!
+  accountRegistration: [String!]!
+  taxResponsibleFirstName: String
+  taxResponsibleSurname: String
+  address: String!
+}
+
+type MutualFundSecurityDetail {
+  fundId: String!
+  positionId: ID!
+  priceChange: Float!
+  symbol: String!
+  name: String!
+  shares: Float!
+  nav: Float!
+  positionValue: Float!
+  rateOfReturn: RateOfReturn!
+}
+
+type MutualFundSecurityTransactionRestrictions {
+  eligibility: MutualFundSecurityTransactionEligibility
+  limits: MutualFundSecurityTransactionLimits
+}
+
+type MutualFundSecurityRedemptionRestrictions {
+  restrictions: MutualFundSecurityTransactionRestrictions
+  bankInformation: MutualFundTransactionInformation
+}
+
+type MutualFundSecurityTransactionEligibility {
+  isPurchaseEligible: Boolean!
+  isExchangeFromEligible: Boolean!
+  isExchangeToEligible: Boolean!
+  isCheckRedemptionEligible: Boolean
+  isACHRedemptionEligible: Boolean
+  isPreviousTaxYearEligible: Boolean
+}
+
+type MutualFundRedemptionTaxWitholdingRestrictions {
+  ###
+  # If the security IS redemption eligible then these values must be populated. Else they'll be assumed to be false
+  ###
+  federalTaxWitholdingEligible: Boolean!
+  stateTaxWitholdingEligible: Boolean
+  stateTaxWitholdingRequired: Boolean
+  ###
+  # If this is true, then the user is allowed to change their state tax withholding to a higher amount, if false it can't be changed
+  ###
+  stateTaxWitholdingOverride: Boolean
+  redemptionDistributionType: RedemptionDistributionType!
+  ###
+  #If this fund isn't eligible for state/federal then these would be null
+  #
+  #Limits for federal witholding are all percentages (e.g. a value of 10.5 represents 10.5%)
+  #Limits for state withholding are dollar values (e.g. a value of 10.5 represents $10.50)
+  ###
+  redemptionMinFederalTaxPercentage: Float
+  redemptionStateTaxAmount: Float
+}
+
+enum RedemptionDistributionType {
+  NORMAL
+  NORMAL_ROTH
+  PREMATURE
+  PREMATURE_ROTH
+  EDUCATIONAL_IRA
+  NOT_APPLICABLE
+}
+
+type MutualFundSecurityTransactionLimits {
+  ###
+  #If a fund isn't eligible for a particular type of transaction its limits will be null
+  #
+  #Limits for the transaction itself are all dollar amounts
+  ###
+  purchaseLimits: TransactionLimit
+  exchangeLimits: TransactionLimit
+  redemptionLimits: RedemptionLimit
+}
+type TransactionLimit {
+  minimum: Float!
+  maximum: Float!
+}
+
+type RedemptionLimit {
+  checkLimits: TransactionLimit
+  achLimits: TransactionLimit
+}
+
+enum MutualFundTransactionType {
+  PURCHASE
+  REDEMPTION
+  EXCHANGE
+}
+
+type MutualFundTransactionInformation {
+  ###
+  # For purchases these are source accounts, for redemptions they're destination accounts.
+  #
+  # If no accounts are available, this shouldn't have been marked as eligible for this type of transaction, hence this field is required
+  ###
+  availableAccounts: [MutualFundTransactionAccount!]!
+}
+
+type MutualFundTransactionAccount {
+  ###
+  # This id will be used when the transaction is submitted to indicate which account is being used. It will be null for a bank account
+  ###
+  id: ID
+  ###
+  # This will be the name of the account holder (the person the check will be made out to) for an address.
+  ###
+  name: String!
+  ###
+  # address will only be present for redemptions. If this MutualFundTransactionAccount represents a bank account it will be null
+  ###
+  address: Address
+  isDefault: Boolean
+  isInWaitingPeriod: Boolean
+}
+
+type SecurityAccountTimeValue {
+  ###
+  # ISO8601 - eg 2007-04-05T14:30Z
+  ###
+  date: String!
+  value: Float!
+}
+
+interface SecurityTransaction {
+  type: String!
+  ###
+  # ISO8609 -- YYYY-MM-DD
+  ###
+  date: String!
+  description: String!
+  value: Float!
+  quantity: Float!
+  price: Float
+  accountNumber: String!
+}
+
+type BrokerageTransaction implements SecurityTransaction {
+  isTrade: Boolean
+  isIntraDay: Boolean
+  isTradeCancelled: Boolean
+  type: String!
+  ###
+  # ISO8609 -- YYYY-MM-DD
+  ###
+  date: String!
+  description: String!
+  securityId: String!
+  securityDescription: String!
+  ###
+  # ISO8609 -- YYYY-MM-DD
+  ###
+  postedDate: String
+  paymentDate: String
+  settlementDate: String
+  tradeDate: String
+  value: Float!
+  quantity: Float!
+  price: Float
+  accountNumber: String!
+}
+
+type MutualFundTransaction {
+  positionId: String!
+  mutualFundTransactionActivity: [MutualFundTransactionActivity]
+}
+
+type MutualFundTransactionActivity {
+  type: String!
+  activityType: String!
+  ###
+  # ISO8609 -- YYYY-MM-DD
+  ###
+  date: String!
+  description: String!
+  value: Float!
+  quantity: Float!
+  price: Float
+  accountNumber: String!
+  effect: String!
+}
+
+interface LHATransaction {
+  type: String!
+  description: String!
+  amount: Float!
+  ###
+  # ISO8601 yyyy-mm-dd
+  ###
+  date: String!
+  isCancelled: Boolean!
+}
+
+type LifeTransaction implements LHATransaction {
+  type: String!
+  description: String!
+  amount: Float!
+  ###
+  # ISO8601 yyyy-mm-dd
+  ###
+  date: String!
+  isCancelled: Boolean!
+}
+
+type HealthTransaction implements LHATransaction {
+  type: String!
+  description: String!
+  amount: Float!
+  ###
+  # ISO8601 yyyy-mm-dd
+  ###
+  date: String!
+  isCancelled: Boolean!
+}
+
+###
+# AnnuityTransaction covers Settlement Options as well
+###
+type AnnuityTransaction implements LHATransaction {
+  type: String!
+  description: String!
+  amount: Float!
+  ###
+  # ISO8601 yyyy-mm-dd
+  ###
+  date: String!
+  isCancelled: Boolean!
+}
+
+type ChoiceDollarDetails {
+  balance: Float
+  amountDirectedYTD: Float
+  amountDirectedLifetime: Float
+  history: [ChoiceDollarAllocation!]
+}
+
+type ChoiceDollarOrganization {
+  id: ID!
+  name: String!
+  address: Address
+}
+
+input ChoiceDollarDonation {
+  organizationId: ID!
+  amount: Int!
+}
+
+type ChoiceDollarAllocation {
+  id: ID!
+  ###
+  # ISO8601 - YYYY-MM-DD
+  ###
+  date: String
+  type: String
+  ###
+  # e.g.: To [org name] of City, State
+  ###
+  description: String
+  amount: Float
+  status: ChoiceDollarStatus
+}
+
+enum ChoiceDollarStatus {
+  REQUESTED
+  PAID
+  IN_PROCESS
+}
+
+type InFaithDetails {
+  donationsYTD: Float!
+  totalLifetimeGrants: Float!
+  grants: [InFaithGrant!]
+}
+
+type InFaithGrant {
+  ###
+  # ISO8601 Date - YYYY-MM-DD
+  ###
+  date: String!
+  organization: String!
+  source: String!
+  amount: Float!
+  ###
+  # TBD: this may become an enum
+  ###
+  status: String!
+}
+
+type ActionTeamDetails {
+  actionTeamsAvailable: Int
+  currentActionTeamProjects: [ActionTeamProject!]
+  pastActionTeamProjects: [ActionTeamProject!]
+}
+
+###
+# Some of these fields only apply to completed (past) projects
+###
+type ActionTeamProject {
+  id: ID!
+  name: String!
+  ###
+  # ISO8601 Date - YYYY-MM-DD
+  ###
+  date: String!
+  ###
+  # Number of volunteers
+  ###
+  volunteers: Int
+  status: EventStatus!
+  dollarsRaised: Float
+  volunteerHours: Float
+}
+
+enum EventStatus {
+  APPROVED
+  DRAFT_REPORT
+  COMPLETED
+}
+
+type BillDetails {
+  profileIdExists: Boolean
+  bills: [Bill!]
+}
+
+type ScheduledPayments {
+  profileIdExists: Boolean
+  scheduledPayments: [ScheduledPayment!]
+}
+
+type Bill {
+  billingId: ID!
+  billType: BillType!
+  name: String!
+  productTypeDescriptionCode: String
+  ###
+  ## ISO8601 -- YYYY-MM-DD
+  ###
+  dueDate: String!
+  billStatus: BillStatus!
+  contractId: ID!
+  productTypeCode: String!
+
+  paymentAmount: Float!
+  billDueIn: Int
+
+  originalBilledAmt: Float
+  dividendReductionAmt: Float
+  nonDividendReductionAmt: Float
+  applicableTaxYears: [Int]
+
+  requestedAmounts: [BillPaymentComponent!]
+}
+
+type BillPaymentComponent {
+  paymentMode: PaymentMode
+  amount: Float!
+  billingAmountType: BillingAmountType
+}
+
+input PaymentComponent {
+  amount: Float!
+  paymentMode: PaymentMode!
+  billingAmountType: BillingAmountType!
+}
+
+type ScheduledPayment {
+  confirmationNumber: String!
+  billingId: ID
+  billType: BillType
+  name: String!
+  vendorCode: String!
+  fundingSourceId: String
+  paymentChannel: String
+
+  productTypeDescriptionCode: String
+  productTypeCode: String
+  ###
+  ## ISO8601 -- YYYY-MM-DD
+  ###
+  dueDate: String!
+
+  ###
+  ## ISO8601 -- YYYY-MM-DD
+  ###
+  effectiveDate: String!
+
+  paymentAmount: Float
+  reportingTaxYear: Int
+
+  isPaymentEditable: Boolean
+
+  paymentAmounts: [BillPaymentComponent!]
+}
+
+type FundingSource {
+  ###
+  ##This id is the fundingTokenId in ACI's parlance
+  ###
+  fundingSourceId: ID!
+  displayString: String!
+}
+
+###
+##For LHA payments via ACI, we have to add and modify payment sources via a webview. This type contains the details for that webview
+###
+type FundingSourceUrl {
+  ###
+  ##The URL that the client needs to load to take the requested action
+  ###
+  url: String!
+}
+
+enum BillStatus {
+  DUE
+  PAST_DUE
+  SCHEDULED
+  PENDING
+}
+
+enum BillType {
+  FIRST_PREMIUM_NOTICE
+  LOAN_INTEREST_NOTICE
+  PREMIUM_REMINDER
+}
+
+enum BillingAmountType {
+  PREMIUM_AMOUNT
+  OTHER
+  LOAN_REPAYMENT_AMOUNT
+  LOAN_AMOUNT
+  LOAN_INTEREST_AMOUNT
+}
+
+enum PaymentMode {
+  NONE
+  ANNUAL_OR_ANNUALLY
+  MONTH_OR_MONTHLY
+  SEMIANNUAL_TWICE_A_YEAR
+  QUARTER_OR_QUARTERLY
+}
+
+enum PaymentChannel {
+  MOBILE
+  WEB
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}
